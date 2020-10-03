@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pathlib
 import subprocess
 import json
@@ -8,7 +10,7 @@ from typing import Any, Dict, Iterator, List, Optional, Union
 DATA_PATH = pathlib.Path(r"H:\Borderlands\BL3 Data")
 JWP_PATH = r"H:\JWP.exe"
 
-DATA_VERSION = 9
+DATA_VERSION = 15
 
 JSON = Dict[str, Any]
 
@@ -37,7 +39,7 @@ class _AbstractAsset(ABC):
         return f"{self.__class__.__name__}(\"{self.path}\")"
 
     @property
-    def parent(self) -> 'AssetFolder':
+    def parent(self) -> AssetFolder:
         if self._full_path == DATA_PATH:
             if isinstance(self, AssetFolder):
                 return self
@@ -77,7 +79,7 @@ class AssetFile(_AbstractAsset):
     def exists(self) -> bool:
         return self._asset_path.exists()
 
-    def as_folder(self) -> 'AssetFolder':
+    def as_folder(self) -> AssetFolder:
         return AssetFolder(self._full_path)
 
     def _load_data(self) -> None:
@@ -132,7 +134,7 @@ class AssetFolder(_AbstractAsset):
     def exists(self) -> bool:
         return self._full_path.exists()
 
-    def __truediv__(self, other: Union[str, pathlib.Path, _AbstractAsset]) -> 'AssetFolder':
+    def __truediv__(self, other: Union[str, pathlib.Path, _AbstractAsset]) -> AssetFolder:
         if not isinstance(other, (str, pathlib.Path, _AbstractAsset)):
             raise TypeError(f"Invalid type to append to path '{type(other)}'")
 

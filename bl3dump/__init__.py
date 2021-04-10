@@ -1,16 +1,15 @@
 from __future__ import annotations
 
+import json
 import pathlib
 import subprocess
-import json
-
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterator, List, Optional, Union
 
 DATA_PATH = pathlib.Path(r"H:\Borderlands\BL3 Data")
 JWP_PATH = r"H:\JWP.exe"
 
-DATA_VERSION = 15
+DATA_VERSION = 20
 
 JSON = Dict[str, Any]
 
@@ -22,7 +21,7 @@ class _AbstractAsset(ABC):
     def __init__(self, path: Union[str, pathlib.Path]) -> None:
         if isinstance(path, str) and path[0] == "/":
             path = path[1:]
-        self._full_path = (DATA_PATH/path).resolve()
+        self._full_path = (DATA_PATH / path).resolve()
 
         try:
             self._full_path.relative_to(DATA_PATH)
@@ -140,9 +139,9 @@ class AssetFolder(_AbstractAsset):
 
         new_path: pathlib.Path
         if isinstance(other, _AbstractAsset):
-            new_path = self._full_path/other._full_path
+            new_path = self._full_path / other._full_path
         else:
-            new_path = self._full_path/other
+            new_path = self._full_path / other
         new_path.resolve()
 
         try:

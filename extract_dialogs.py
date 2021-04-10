@@ -1,11 +1,10 @@
-import bl3dump
 import csv
 import os
 
-from typing import Set
+import bl3dump
 
-scripts = bl3dump.AssetFolder("/Game/Dialog/Scripts/")
-all_styles: Set[str] = set()
+scripts = bl3dump.AssetFolder("/Game/PatchDLC/Geranium/Dialog/Scripts/")
+all_styles: set[str] = set()
 
 try:
     os.mkdir("dialogs")

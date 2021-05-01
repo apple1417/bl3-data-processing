@@ -4,14 +4,15 @@ import json
 import pathlib
 import subprocess
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterator, List, Optional, Union
+from collections.abc import Iterator
+from typing import Any, Optional, Union
 
 DATA_PATH = pathlib.Path(r"H:\Borderlands\BL3 Data")
 JWP_PATH = r"H:\JWP.exe"
 
 DATA_VERSION = 20
 
-JSON = Dict[str, Any]
+JSON = dict[str, Any]
 
 
 class _AbstractAsset(ABC):
@@ -35,7 +36,12 @@ class _AbstractAsset(ABC):
             self.path = "/" + "/".join(parts) + "/"
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(\"{self.path}\")"
+        return f"{self.__class__.__qualname__}(\"{self.path}\")"
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, _AbstractAsset):
+            return False
+        return self._full_path == other._full_path
 
     @property
     def parent(self) -> AssetFolder:
@@ -54,12 +60,28 @@ class _AbstractAsset(ABC):
     def exists(self) -> bool:
         raise NotImplementedError
 
+    def glob(self, pattern: str) -> Iterator[_AbstractAsset]:
+        if pattern[0] == "/":
+            pattern = pattern[1:]
+
+        known_paths = set()
+        for path in self._full_path.glob(pattern):
+            trimmed_path = path.with_suffix("")
+            if trimmed_path in known_paths:
+                continue
+            known_paths.add(trimmed_path)
+
+            if path.is_dir():
+                yield AssetFolder(path)
+            elif path.is_file():
+                yield AssetFile(path)
+
 
 class AssetFile(_AbstractAsset):
     _asset_path: pathlib.Path
     _json_path: pathlib.Path
 
-    _data: Optional[List[JSON]]
+    _data: Optional[list[JSON]]
 
     def __init__(self, path: Union[str, pathlib.Path]) -> None:
         super().__init__(path)
@@ -114,7 +136,7 @@ class AssetFile(_AbstractAsset):
             self._load_data()
 
     @property
-    def data(self) -> List[JSON]:
+    def data(self) -> list[JSON]:
         if self._data is None:
             if not self.exists():
                 raise FileNotFoundError(f"Could not find asset file at '{self._asset_path}'")
@@ -123,10 +145,29 @@ class AssetFile(_AbstractAsset):
                 raise RuntimeError(f"Unable to serialize asset file '{self._asset_path}'")
         return self._data
 
-    def iter_exports_of_class(self, cls: str) -> Iterator[JSON]:
+    def iter_exports_of_class(self, *cls: str) -> Iterator[JSON]:
         for export in self.data:
-            if export["export_type"] == cls:
+            if export["export_type"] in cls:
                 yield export
+
+    def get_single_export(self, *cls: str) -> JSON:
+        gen = self.iter_exports_of_class(*cls)
+        first: JSON
+        try:
+            first = next(gen)
+        except (GeneratorExit, StopIteration) as ex:
+            raise ValueError(
+                "There are no exports of classes "
+                + ", ".join(f"'{c}'" for c in cls)
+            ) from ex
+        try:
+            next(gen)
+        except (GeneratorExit, StopIteration):
+            return first
+        raise ValueError(
+            "There are multiple exports of classes "
+            + ", ".join(f"'{c}'" for c in cls)
+        )
 
 
 class AssetFolder(_AbstractAsset):
@@ -175,3 +216,10 @@ class AssetFolder(_AbstractAsset):
         for child in self._full_path.glob("**/*"):
             if child.suffix == ".uasset" and child.stem.lower().startswith(prefix):
                 yield AssetFile(child.relative_to(DATA_PATH))
+
+
+_glob_root = AssetFolder("/")
+
+
+def glob(pattern: str) -> Iterator[_AbstractAsset]:
+    yield from _glob_root.glob(pattern)

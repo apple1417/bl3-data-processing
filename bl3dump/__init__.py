@@ -10,7 +10,7 @@ from typing import Any, Optional, Union
 DATA_PATH = pathlib.Path(r"H:\Borderlands\BL3 Data")
 JWP_PATH = r"H:\JWP.exe"
 
-DATA_VERSION = 20
+DATA_VERSION = 21
 
 JSON = dict[str, Any]
 
